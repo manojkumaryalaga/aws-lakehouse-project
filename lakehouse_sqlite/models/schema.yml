@@ -1,0 +1,37 @@
+version: 2
+
+models:
+  - name: fact_trips
+    description: "Fact table containing all NYC taxi trips"
+    columns:
+      - name: trip_id
+        description: "Unique trip identifier"
+        tests:
+          - unique
+          - not_null
+      - name: fare_amount
+        description: "Trip fare amount"
+        tests:
+          - not_null
+      - name: trip_distance
+        description: "Trip distance in miles"
+        tests:
+          - not_null
+
+  - name: dim_datetime
+    description: "Datetime dimension table"
+    columns:
+      - name: datetime_id
+        description: "Unique datetime identifier"
+        tests:
+          - unique
+          - not_null
+
+  - name: dim_location
+    description: "Location dimension table"
+    columns:
+      - name: location_id
+        description: "Unique location identifier"
+        tests:
+          - unique
+          - not_null

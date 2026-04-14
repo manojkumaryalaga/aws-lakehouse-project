@@ -1,0 +1,1 @@
+{"Name":"lakehouse-crawler","Role":"arn:aws:iam::041073296565:role/GlueRole","DatabaseName":"lakehouse_db","Targets":{"S3Targets":[{"Path":"s3://lakehouse-project-manoj/raw/"}]}}

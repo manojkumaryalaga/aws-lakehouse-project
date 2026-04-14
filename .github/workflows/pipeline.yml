@@ -1,0 +1,59 @@
+name: Lakehouse Pipeline CI/CD
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  run-pipeline:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: pip install dbt-sqlite
+
+    - name: Create dbt profiles
+      run: |
+        mkdir -p ~/.dbt
+        cat > ~/.dbt/profiles.yml << 'EOF'
+        lakehouse_sqlite:
+          target: dev
+          outputs:
+            dev:
+              type: sqlite
+              threads: 1
+              database: lakehouse
+              schema: main
+              schemas_and_paths:
+                main: /home/runner/work/aws-lakehouse-project/aws-lakehouse-project/lakehouse.db
+              schema_directory: /home/runner/work/aws-lakehouse-project/aws-lakehouse-project
+        EOF
+
+    - name: Create SQLite database
+      run: |
+        python -c "
+        import sqlite3
+        conn = sqlite3.connect('lakehouse.db')
+        conn.execute('''CREATE TABLE IF NOT EXISTS raw_taxi_trips (
+          vendorid INTEGER, tpep_pickup_datetime TEXT,
+          tpep_dropoff_datetime TEXT, passenger_count REAL,
+          trip_distance REAL, pulocationid INTEGER,
+          dolocationid INTEGER, payment_type INTEGER,
+          fare_amount REAL, tip_amount REAL,
+          tolls_amount REAL, total_amount REAL)''')
+        conn.close()
+        print('Database created!')
+        "
+
+    - name: Run dbt models
+      run: |
+        cd lakehouse_sqlite
+        dbt run
