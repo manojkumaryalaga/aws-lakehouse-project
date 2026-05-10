@@ -125,9 +125,10 @@ Pipeline summary — **1,369,765 trips · $12.1 avg fare · $1.656B total revenu
 ### Athena Queries
 
 ![Athena Top Zones](screenshots/Screenshot%20(207).png)
-![Athena Top Zones](screenshots/Screenshot%20(208).png)
-![Athena Top Zones](screenshots/Screenshot%20(211).png)
+![Athena Top Zones](screenshots/Screenshot%20(206).png)
 ![Athena Top Zones](screenshots/Screenshot%20(209).png)
+![Athena Top Zones](screenshots/Screenshot%20(208).png)
+
 ---
 
 ## ⚙️ dbt querying on modeled data
