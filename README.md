@@ -128,9 +128,7 @@ Top pickup zones — Zone 236: **74,397 trips** · Zone 237: **73,029 trips** ·
 
 ---
 
-## ⚙️ ETL Pipeline
-
-Python ETL reads from S3, applies 6 validation checks, uploads clean CSV back to S3, then loads into SQLite.
+## ⚙️ dbt querying on modeled data
 
 ```
 Rows before cleaning:  1,369,765
