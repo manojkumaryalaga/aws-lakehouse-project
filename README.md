@@ -4,393 +4,288 @@
 [![AWS](https://img.shields.io/badge/AWS-Cloud-orange.svg)](https://aws.amazon.com/)
 [![dbt](https://img.shields.io/badge/dbt-Core-red.svg)](https://www.getdbt.com/)
 [![SQLite](https://img.shields.io/badge/SQLite-3-blue.svg)](https://www.sqlite.org/)
+[![XGBoost](https://img.shields.io/badge/XGBoost-ML-green.svg)](https://xgboost.readthedocs.io/)
+[![LightGBM](https://img.shields.io/badge/LightGBM-ML-brightgreen.svg)](https://lightgbm.readthedocs.io/)
+[![scikit-learn](https://img.shields.io/badge/scikit--learn-1.8-orange.svg)](https://scikit-learn.org/)
 
-> **End-to-end AWS data lakehouse processing 1.37M+ NYC taxi records with automated ETL, quality validation, and dimensional modeling.**
+> **End-to-end AWS data lakehouse processing 1.37M+ NYC taxi records with automated ETL, quality validation, dimensional modeling, and 3 production ML models.**
 
 ---
 
 ## 📋 Table of Contents
-
-- [Overview](#overview)
-- [Architecture](#architecture)
-- [Tech Stack](#tech-stack)
-- [Key Features](#key-features)
-- [Data Quality Results](#data-quality-results)
-- [Project Structure](#project-structure)
-- [Setup & Installation](#setup--installation)
-- [Usage](#usage)
-- [What I Learned](#what-i-learned)
-- [Future Enhancements](#future-enhancements)
+- [Overview](#-overview)
+- [Architecture](#️-architecture)
+- [Tech Stack](#️-tech-stack)
+- [AWS Infrastructure](#-aws-infrastructure)
+- [ETL Pipeline](#️-etl-pipeline)
+- [dbt Dimensional Models](#-dbt-dimensional-models)
+- [CloudWatch Monitoring](#-cloudwatch-monitoring)
+- [ML Models](#-ml-models--nyc-taxi-intelligence-layer)
+- [Data Quality Results](#-data-quality-results)
+- [Project Structure](#-project-structure)
+- [Setup & Installation](#-setup--installation)
+- [Author](#-author)
 
 ---
 
 ## 🎯 Overview
 
-This project demonstrates **modern data lakehouse architecture** on AWS with local data warehouse capabilities, implementing enterprise data engineering best practices:
+This project demonstrates **modern data lakehouse architecture** on AWS, implementing enterprise data engineering best practices end-to-end — from raw S3 ingestion through dbt dimensional modeling to a full **ML intelligence layer** with 3 production models.
 
-✅ **Multi-layer data architecture** (Bronze → Silver → Gold)  
-✅ **Automated ETL pipelines** with comprehensive data quality validation  
-✅ **Dimensional modeling** using dbt for analytics-ready datasets  
-✅ **Workflow orchestration** with Apache Airflow  
-✅ **Infrastructure as Code** for AWS resource provisioning  
-✅ **CI/CD integration** with automated testing  
-
-### Dataset
-
-**NYC Taxi Trip Records** - 1.37M rows of real-world transportation data including:
-- Trip timestamps and durations
-- Pickup/dropoff locations (latitude/longitude)
-- Fare amounts and payment types
-- Distance traveled and passenger counts
-
-### Business Value
-
-This pipeline enables:
-- **Data Quality Assurance**: 89.1% validation pass rate with automated checks
-- **Analytics-Ready Data**: Star schema modeling for efficient querying
-- **Scalable Architecture**: Cloud-native design ready for production scaling
-- **Reproducible Workflows**: IaC and orchestration for consistent deployments
+| Stat | Value |
+|------|-------|
+| 📊 Raw records ingested | 1,369,765 |
+| ✅ Clean records loaded | 1,220,127 |
+| 🎯 Data quality pass rate | 89.1% |
+| 🤖 ML models trained | 3 |
+| ☁️ Cloud provider | AWS (S3, Glue, Athena, CloudWatch) |
 
 ---
 
 ## 🏛️ Architecture
 
 ```
-┌──────────────────────────────────────────────────────────────────┐
-│                   AWS LAKEHOUSE ARCHITECTURE                      │
-└──────────────────────────────────────────────────────────────────┘
-
-                           ┌─────────────┐
-                           │  Raw Data   │
-                           │ (NYC Taxi)  │
-                           │  CSV Files  │
-                           └──────┬──────┘
-                                  │
-                                  ▼
-                    ┌──────────────────────────┐
-                    │   S3 Bronze Layer        │
-                    │   (Raw Data Storage)     │
-                    │   lakehouse-bronze/      │
-                    └────────────┬─────────────┘
-                                 │
-                                 ▼
-                    ┌──────────────────────────┐
-                    │   AWS Glue Crawler       │
-                    │   (Auto Schema Discovery)│
-                    │   • Scans S3 data        │
-                    │   • Detects schema       │
-                    └────────────┬─────────────┘
-                                 │
-                                 ▼
-                    ┌──────────────────────────┐
-                    │  AWS Glue Data Catalog   │
-                    │  (Metadata Repository)   │
-                    │  • Table definitions     │
-                    │  • Column types          │
-                    └────────────┬─────────────┘
-                                 │
-                                 ▼
-                    ┌──────────────────────────┐
-                    │    Amazon Athena         │
-                    │  (SQL Query Engine)      │
-                    │  • Serverless queries    │
-                    │  • S3 data access        │
-                    └────────────┬─────────────┘
-                                 │
-                                 ▼
-                    ┌──────────────────────────┐
-                    │  Python ETL Pipeline     │
-                    │  ┌────────────────────┐  │
-                    │  │ Data Quality Checks│  │
-                    │  ├────────────────────┤  │
-                    │  │ • Null validation  │  │
-                    │  │ • Duplicate removal│  │
-                    │  │ • Schema checks    │  │
-                    │  │ • Type enforcement │  │
-                    │  │ • Range validation │  │
-                    │  └────────────────────┘  │
-                    └────────────┬─────────────┘
-                                 │
-                                 ▼
-                    ┌──────────────────────────┐
-                    │   S3 Silver Layer        │
-                    │   (Cleaned Data)         │
-                    │   lakehouse-silver/      │
-                    └────────────┬─────────────┘
-                                 │
-                                 ▼
-                    ┌──────────────────────────┐
-                    │   SQLite Database        │
-                    │   (Local Data Warehouse) │
-                    │   lakehouse.db           │
-                    └────────────┬─────────────┘
-                                 │
-                                 ▼
-                    ┌──────────────────────────┐
-                    │   dbt Transformations    │
-                    │  ┌────────────────────┐  │
-                    │  │ Staging Models     │  │
-                    │  │ • stg_taxi_trips   │  │
-                    │  ├────────────────────┤  │
-                    │  │ Dimensional Models │  │
-                    │  │ • fact_trips       │  │
-                    │  │ • dim_location     │  │
-                    │  │ • dim_datetime     │  │
-                    │  │ • dim_payment      │  │
-                    │  └────────────────────┘  │
-                    └────────────┬─────────────┘
-                                 │
-                                 ▼
-                    ┌──────────────────────────┐
-                    │   S3 Gold Layer          │
-                    │   (Analytics-Ready)      │
-                    │   lakehouse-gold/        │
-                    └──────────────────────────┘
-
-┌──────────────────────────────────────────────────────────────────┐
-│                      ORCHESTRATION LAYER                          │
-└──────────────────────────────────────────────────────────────────┘
-
-    ┌────────────────────┐          ┌─────────────────────┐
-    │  Apache Airflow    │          │   CloudWatch        │
-    │  • DAG Scheduling  │          │   • Monitoring      │
-    │  • Task Deps       │          │   • Logging         │
-    │  • Error Handling  │          │   • Alerts          │
-    └────────────────────┘          └─────────────────────┘
-
-┌──────────────────────────────────────────────────────────────────┐
-│                         CI/CD AUTOMATION                          │
-└──────────────────────────────────────────────────────────────────┘
-
-              ┌──────────────────────────────┐
-              │     GitHub Actions           │
-              │  • Automated Testing         │
-              │  • Code Validation           │
-              │  • Deployment Pipeline       │
-              └──────────────────────────────┘
+NYC Taxi CSV (120 MB)
+        │
+        ▼
+┌─────────────────┐
+│  S3 Bronze      │  raw/yellow_tripdata_2021-01.csv
+│  (Raw Layer)    │
+└────────┬────────┘
+         │  AWS Glue Crawler (auto-detects 18 columns)
+         ▼
+┌─────────────────┐
+│  Glue Catalog   │  lakehouse_db.raw
+│  + Athena       │  Serverless SQL · 1.076s · 120MB scanned
+└────────┬────────┘
+         │  Python ETL (pandas + boto3)
+         ▼
+┌─────────────────┐
+│  S3 Silver      │  processed/yellow_tripdata_cleaned.csv
+│  (Cleaned)      │  1,220,127 rows · 89.1% pass rate
+└────────┬────────┘
+         │  load_to_sqlite.py
+         ▼
+┌─────────────────┐
+│  SQLite + dbt   │  fact_trips · dim_location
+│  (Gold Layer)   │  dim_datetime · dim_payment
+└────────┬────────┘
+         │  nyc_taxi_ml/
+         ▼
+┌─────────────────┐
+│  ML Layer       │  XGBoost · Isolation Forest · LightGBM
+│  3 Models       │  Demand · Anomaly · Fare
+└─────────────────┘
+         │  CloudWatch
+         ▼
+┌─────────────────┐
+│  Monitoring     │  DataQualityScore · RowsProcessed
+│  + Alerting     │  LowDataQuality alarm
+└─────────────────┘
 ```
 
 ---
 
 ## 🛠️ Tech Stack
 
-### Cloud Services (AWS)
-- **Amazon S3** - Multi-layer data lake (Bronze/Silver/Gold)
-- **AWS Glue Crawler** - Automated schema discovery and cataloging
-- **AWS Glue Data Catalog** - Centralized metadata repository
-- **Amazon Athena** - Serverless SQL query engine for S3 data
-- **AWS CloudWatch** - Monitoring and logging
-- **AWS IAM** - Security and access management
+**Cloud** — Amazon S3 · AWS Glue · Amazon Athena · CloudWatch · IAM
 
-### Data Storage & Warehouse
-- **SQLite 3** - Lightweight relational database for local development
-  - Zero configuration required
-  - Serverless operation
-  - ACID compliance
-  - Perfect for development and testing
+**Data** — Python 3.9+ · pandas · boto3 · dbt-core · SQLite
 
-### Data Processing & Transformation
-- **Python 3.9+** - Core ETL pipeline
-  - `pandas` - Data manipulation and analysis
-  - `boto3` - AWS SDK for Python
-  - `awswrangler` - Pandas integration with AWS services
-  - `sqlite3` - SQLite database interface
-- **SQL** - Data querying and transformations
-- **dbt (Data Build Tool)** - SQL-based dimensional modeling
-  - dbt-core with SQLite adapter
-  - Star schema implementation
-  - Data quality testing framework
+**ML** — XGBoost · LightGBM · scikit-learn · joblib · matplotlib
 
-### Orchestration & Workflow
-- **Apache Airflow** - Workflow orchestration and scheduling
-  - DAG-based pipeline management
-  - Task dependency handling
-  - Retry logic and monitoring
-
-### Development & CI/CD
-- **Git/GitHub** - Version control
-- **GitHub Actions** - CI/CD automation
+**DevOps** — GitHub Actions · Apache Airflow · VS Code
 
 ---
 
-## ✨ Key Features
+## ☁️ AWS Infrastructure
 
-### 1. **Medallion Architecture (Bronze → Silver → Gold)**
+### S3 — `lakehouse-project-manoj`
+
+Single bucket with 4 folders: `raw/` · `processed/` · `athena-results/` · `scripts/`
+
+![S3 Bucket Structure](screenshots/Screenshot__192_.png)
+
+### AWS Glue — Schema Auto-Discovery
+
+Glue Crawler `lakehouse-crawler` scanned S3 and auto-detected **18 columns** including `vendorid`, `tpep_pickup_datetime`, `trip_distance`, `pulocationid`, `fare_amount` and more.
+
+![Glue Schema 18 Columns](screenshots/Screenshot__198_.png)
+
+Crawler state: **Ready · Succeeded** · Last run: April 4, 2026 · 1 table created in `lakehouse_db`
+
+![Glue Crawler Succeeded](screenshots/Screenshot__202_.png)
+
+### Amazon Athena — Serverless Query Results
+
+Pipeline summary — **1,369,765 trips · $12.1 avg fare · $1.656B total revenue · 4.63 mi avg distance** — completed in **1.076 sec**, scanning 120.15 MB.
+
+![Athena Pipeline Stats](screenshots/Screenshot__213_.png)
+
+Top pickup zones — Zone 236: **74,397 trips** · Zone 237: **73,029 trips** · Zone 141: **46,435 trips**
+
+![Athena Top Zones](screenshots/Screenshot__208_.png)
+
+---
+
+## ⚙️ ETL Pipeline
+
+Python ETL reads from S3, applies 6 validation checks, uploads clean CSV back to S3, then loads into SQLite.
+
 ```
-Raw Data → Validated Data → Analytics-Ready Data
+Rows before cleaning:  1,369,765
+Rows after cleaning:   1,220,127
+Cleaned data uploaded to S3 processed/ folder
+Loading 1220127 rows into SQLite... Done!
 ```
-- **Bronze Layer (S3)**: Immutable raw data from source
-- **Silver Layer (S3)**: Cleaned, validated, deduplicated data
-- **Gold Layer (S3 + SQLite)**: Business-level aggregations and star schema
 
-### 2. **Comprehensive Data Quality Framework**
+![VS Code ETL Run](screenshots/Screenshot__196_.png)
 
-Automated validation pipeline checking:
-- ✅ **Null Value Handling** - Identifies and handles missing critical fields
-- ✅ **Duplicate Detection** - Removes duplicate trip records
-- ✅ **Schema Validation** - Enforces expected column structure and types
-- ✅ **Data Type Checks** - Validates numeric, string, and timestamp formats
-- ✅ **Business Rules** - Validates fare amounts, distances, timestamps
+---
 
-**Result**: 89.1% of records pass all validation checks
+## 🗃️ dbt Dimensional Models
 
-### 3. **Dimensional Modeling with dbt**
+Star schema built with dbt-core (SQLite adapter). Models visible via Datasette at `127.0.0.1:8005`.
 
-Star schema design optimized for analytical queries:
-- **Fact Table**: `fact_trips` - Grain: one row per trip
-- **Dimension Tables**:
-  - `dim_location` - Pickup/dropoff geographic data
-  - `dim_datetime` - Trip date/time breakdowns
-  - `dim_payment` - Payment type classifications
+### `raw_taxi_trips` — 1,220,127 rows
 
-**Benefits**:
-- Optimized query performance
-- Intuitive business logic layer
-- Reusable SQL transformations
-- Built-in data quality tests
+![raw_taxi_trips](screenshots/Screenshot__195_.png)
 
-### 4. **Serverless Query Engine**
+### `fact_trips` — 1,220,127 rows
 
-Amazon Athena enables:
-- SQL queries directly on S3 data
-- Zero infrastructure management
-- Pay-per-query pricing
-- Integration with Glue Data Catalog
+![fact_trips](screenshots/Screenshot__211_.png)
 
-### 5. **Automated Workflow Orchestration**
+---
 
-Apache Airflow provides:
-- Scheduled pipeline execution
-- Task dependency management
-- Automatic retries on failure
-- Monitoring and alerting
-- Visual workflow tracking
+## 📡 CloudWatch Monitoring
 
-### 6. **Infrastructure as Code**
+Custom namespace **`LakehousePipeline`** with 4 metrics: `DataQualityScore` · `RowsAfterCleaning` · `RowsDropped` · `RowsProcessed`
 
-JSON-based AWS configurations:
-- Glue Database definition (`glue-db.json`)
-- Glue Crawler configuration (`crawler.json`)
-- IAM trust policies (`trust-policy.json`)
-- Reproducible deployments
-- Version-controlled infrastructure
+![CloudWatch Metrics](screenshots/Screenshot__216_.png)
+
+Alarm **`LowDataQuality`** fires when `DataQualityScore < 80` for 1 datapoint within 5 minutes.
+
+![CloudWatch Alarm](screenshots/Screenshot__218_.png)
+
+---
+
+## 🤖 ML Models — NYC Taxi Intelligence Layer
+
+All 3 models trained on **200,000 NYC taxi records** · Python 3.12 · Saved as `.joblib` + `.png` charts
+
+```bash
+cd nyc_taxi_ml
+pip install -r requirements_ml.txt
+python run_all_models.py
+```
+
+---
+
+### Model 1 — Demand Forecasting (XGBoost)
+
+**Goal**: Predict hourly trip count per pickup zone
+
+**Features**: Lag features (1h / 2h / 3h / 24h / 168h) + rolling 24h & 7-day averages + hour / day / zone
+
+| MAE | RMSE | R² | MAPE | Train rows | Zones modelled |
+|-----|------|----|------|------------|----------------|
+| 0.4347 trips/hr | 0.6313 trips/hr | 0.2589 | 29.41% | 117,351 | 20 |
+
+`rolling_24h_avg` (importance 0.38) is the strongest predictor — recent demand drives future demand.
+
+![Model 1 Demand Forecast](screenshots/Screenshot__221_.png)
+
+---
+
+### Model 2 — Anomaly Detection (Isolation Forest)
+
+**Goal**: Detect suspicious fares, impossible speeds, and fraudulent trips
+
+**Features**: `fare_amount` · `trip_distance` · `speed_mph` · `fare_per_mile` · `tip_pct` · `is_overnight`
+
+| Anomalies | Normal | Rate | Avg Score | High-fare | Impossible speed |
+|-----------|--------|------|-----------|-----------|-----------------|
+| 10,000 | 190,000 | 5.00% | 0.6441 | 500 | 472 |
+
+**Key insight**: Overnight hours (10pm–6am) show **17–26% anomaly rate** vs 2–5% during daytime.
+
+![Model 2 Anomaly Detection](screenshots/Screenshot__223_.png)
+
+---
+
+### Model 3 — Fare Estimator (LightGBM)
+
+**Goal**: Predict trip fare from distance, zone, time, and passenger features
+
+**Features**: `trip_distance` · `trip_duration_min` · `pickup_hour` · `pickup_location_id` · `dropoff_location_id` · `pickup_dow` · rush hour flags
+
+| MAE | RMSE | R² | Within $1 | Within $2 | Within $5 |
+|-----|------|----|-----------|-----------|-----------|
+| $1.16 | $1.44 | **0.9683** | 50.8% | 83.9% | **99.9%** |
+
+Live demo predictions:
+
+| Trip | Predicted Fare |
+|------|---------------|
+| Midtown → Downtown · 2.5mi · 8am rush | **$10.98** |
+| JFK → Manhattan · 15mi · 11pm weekend | **$36.40** |
+| Short trip · 0.8mi · midday | **$4.63** |
+
+![Model 3 Fare Estimator](screenshots/Screenshot__225_.png)
+
+### Live Interactive Predictor
+
+Input any trip parameters → instant LightGBM fare prediction with surge factor breakdown.
+
+![Live Predictor](screenshots/Screenshot__220_.png)
 
 ---
 
 ## 📊 Data Quality Results
 
-### Pipeline Execution Summary
-
 | Metric | Value |
 |--------|-------|
-| **Total Raw Records Ingested** | 1,369,765 |
-| **Records Failing Validation** | 149,638 |
-| **Clean Records Loaded** | 1,220,127 |
-| **Data Quality Pass Rate** | **89.1%** |
+| Total raw records | 1,369,765 |
+| Records failing validation | 149,638 (10.9%) |
+| **Clean records loaded** | **1,220,127** |
+| **Pass rate** | **89.1%** |
 
-### Validation Breakdown
-
-```python
-Quality Validation Pipeline:
-┌─────────────────────────────────────────┐
-│  INPUT: 1,369,765 raw records           │
-└─────────────────┬───────────────────────┘
-                  │
-                  ▼
-┌─────────────────────────────────────────┐
-│  VALIDATION CHECKS                      │
-├─────────────────────────────────────────┤
-│  ✅ Null Check                          │
-│  ✅ Duplicate Check                     │
-│  ✅ Schema Validation                   │
-│  ✅ Data Type Enforcement               │
-│  ✅ Range Validation                    │
-│  ✅ Format Validation                   │
-└─────────────────┬───────────────────────┘
-                  │
-                  ▼
-┌─────────────────────────────────────────┐
-│  BAD RECORDS: 149,638 removed (10.9%)   │
-└─────────────────────────────────────────┘
-                  │
-                  ▼
-┌─────────────────────────────────────────┐
-│  CLEAN OUTPUT: 1,220,127 records (89.1%)│
-└─────────────────────────────────────────┘
-```
-
-### Why 89.1% Quality Rate?
-
-Real-world data contains issues:
-- Missing required fields (nulls in critical columns)
-- Duplicate trip records
-- Invalid timestamp formats
-- Out-of-range fare amounts or distances
-- Malformed geographic coordinates
-
-The validation framework ensures **only high-quality data** reaches the analytics layer.
+Validation checks applied: **Null · Duplicate · Schema · Data Type · Range · Format**
 
 ---
 
 ## 📁 Project Structure
 
 ```
-aws-lakehouse-pipeline/
-│
-├── .github/
-│   └── workflows/
-│       └── ci.yml                    # CI/CD automation
-│
-├── airflow/
-│   ├── dags/
-│   │   ├── lakehouse_pipeline.py     # Main orchestration DAG
-│   │   ├── data_quality_dag.py       # Quality monitoring
-│   │   └── backfill_dag.py           # Historical processing
-│   ├── plugins/
-│   │   └── custom_operators/         # Reusable operators
-│   └── config/
-│       └── airflow.cfg               # Airflow configuration
-│
+aws-lakehouse-project/
+├── .github/workflows/ci.yml         # GitHub Actions CI/CD
+├── airflow/lakehouse_dag.py          # Airflow orchestration DAG
 ├── lakehouse_dbt/
 │   ├── models/
-│   │   ├── staging/
-│   │   │   ├── stg_taxi_trips.sql    # Bronze → Silver staging
-│   │   │   └── stg_taxi_trips.yml    # Tests & documentation
-│   │   └── marts/
-│   │       ├── fact_trips.sql        # Trip fact table
-│   │       ├── dim_location.sql      # Location dimension
-│   │       ├── dim_datetime.sql      # Date/time dimension
-│   │       └── dim_payment.sql       # Payment dimension
-│   ├── macros/                       # Reusable SQL functions
-│   ├── tests/                        # Custom data tests
-│   └── dbt_project.yml               # dbt configuration
-│
-├── lakehouse_sqlite/
-│   └── lakehouse.db                  # SQLite database (warehouse)
-│
-├── scripts/
-│   ├── etl/
-│   │   ├── extract.py                # S3 data extraction
-│   │   ├── transform.py              # Data cleaning & validation
-│   │   ├── load.py                   # Load to SQLite
-│   │   └── data_quality.py           # Quality check framework
+│   │   ├── fact_trips.sql            # 1,220,127 rows
+│   │   ├── dim_location.sql          # 260 rows
+│   │   ├── dim_datetime.sql          # 877,702 rows
+│   │   └── schema.yml
+│   └── dbt_project.yml
+├── lakehouse_sqlite/lakehouse.db     # SQLite data warehouse
+├── nyc_taxi_ml/                      # ← ML Intelligence Layer
+│   ├── run_all_models.py             # Runs all 3 models
+│   ├── models/
+│   │   ├── demand_forecast.py        # XGBoost
+│   │   ├── anomaly_detection.py      # Isolation Forest
+│   │   └── fare_estimator.py         # LightGBM
 │   ├── utils/
-│   │   ├── aws_helpers.py            # S3, Glue, Athena utilities
-│   │   ├── db_helpers.py             # SQLite utilities
-│   │   └── config_loader.py          # Configuration management
-│   └── deployment/
-│       └── setup_infrastructure.py   # AWS setup automation
-│
-├── config/
-│   ├── dev.yaml                      # Development config
-│   └── prod.yaml                     # Production config
-│
-├── .gitignore
-├── README.md                         # This file
-├── requirements.txt                  # Python dependencies
-├── crawler.json                      # Glue Crawler definition
-├── glue-db.json                      # Glue Database definition
-└── trust-policy.json                 # IAM trust policy
+│   │   ├── db_loader.py
+│   │   └── pretty_print.py
+│   └── outputs/                      # .joblib models + .png charts
+├── scripts/
+│   ├── etl.py
+│   ├── load_to_sqlite.py
+│   └── cloudwatch_monitor.py
+├── crawler.json
+├── glue-db.json
+├── trust-policy.json
+└── requirements.txt
 ```
 
 ---
@@ -398,385 +293,47 @@ aws-lakehouse-pipeline/
 ## 🚀 Setup & Installation
 
 ### Prerequisites
-
-- **AWS Account** with IAM permissions for S3, Glue, Athena
-- **Python 3.9+**
-- **AWS CLI** configured with credentials
-- **dbt CLI** with SQLite adapter
-- **Git**
-
-### Step 1: Clone Repository
+- AWS Account with IAM permissions (S3, Glue, Athena, CloudWatch)
+- Python 3.9+ · AWS CLI configured · dbt CLI · Git
 
 ```bash
-git clone https://github.com/manojkumaryalaga/aws-lakehouse-pipeline.git
-cd aws-lakehouse-pipeline
-```
+# 1. Clone
+git clone https://github.com/manojkumaryalaga/aws-lakehouse-project.git
+cd aws-lakehouse-project
 
-### Step 2: Install Python Dependencies
-
-```bash
-# Create virtual environment
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
-
-# Install dependencies
+# 2. Install
 pip install -r requirements.txt
-```
 
-**Key packages installed**:
-```txt
-pandas>=1.5.0
-boto3>=1.26.0
-awswrangler>=2.19.0
-apache-airflow>=2.5.0
-dbt-core>=1.4.0
-dbt-sqlite>=1.4.0
-```
-
-### Step 3: Configure AWS Credentials
-
-```bash
-# Option 1: AWS CLI configuration
+# 3. Configure AWS
 aws configure
-# Enter: Access Key ID, Secret Access Key, Region (us-east-1), Output (json)
 
-# Option 2: Environment variables
-export AWS_ACCESS_KEY_ID="your-access-key"
-export AWS_SECRET_ACCESS_KEY="your-secret-key"
-export AWS_DEFAULT_REGION="us-east-1"
-```
-
-### Step 4: Set Up AWS Infrastructure
-
-```bash
-# Create S3 buckets (update bucket names to be globally unique)
-aws s3 mb s3://lakehouse-bronze-<your-name>
-aws s3 mb s3://lakehouse-silver-<your-name>
-aws s3 mb s3://lakehouse-gold-<your-name>
-
-# Create Glue database
+# 4. Set up Glue
 aws glue create-database --database-input file://glue-db.json
-
-# Create Glue crawler
 aws glue create-crawler --cli-input-json file://crawler.json
 
-# Verify setup
-aws glue get-database --name nyc_taxi_lakehouse
-aws glue get-crawler --name nyc-taxi-crawler
+# 5. Run ETL
+python scripts/etl.py
+python scripts/load_to_sqlite.py
+
+# 6. Run dbt
+cd lakehouse_dbt && dbt run --profile lakehouse_sqlite
+
+# 7. Run ML models
+cd nyc_taxi_ml
+pip install -r requirements_ml.txt
+python run_all_models.py
 ```
-
-### Step 5: Initialize SQLite Database
-
-```bash
-# SQLite database is created automatically on first run
-# Or manually create:
-sqlite3 lakehouse_sqlite/lakehouse.db
-
-# Verify:
-sqlite3 lakehouse_sqlite/lakehouse.db ".tables"
-```
-
-### Step 6: Configure dbt
-
-```bash
-cd lakehouse_dbt
-
-# dbt profile already configured for SQLite
-# Check: ~/.dbt/profiles.yml
-
-# Test connection
-dbt debug
-
-# Should show:
-# Connection test: OK
-# All checks passed!
-```
-
-### Step 7: Set Up Airflow (Optional)
-
-```bash
-# Set Airflow home directory
-export AIRFLOW_HOME=~/airflow
-
-# Initialize database
-airflow db init
-
-# Create admin user
-airflow users create \
-    --username admin \
-    --password admin \
-    --firstname Admin \
-    --lastname User \
-    --role Admin \
-    --email admin@example.com
-
-# Start services
-airflow webserver --port 8080  # Terminal 1
-airflow scheduler               # Terminal 2
-```
-
-Access UI at: `http://localhost:8080`
-
----
-
-## 📖 Usage
-
-### Running the Complete Pipeline
-
-#### Option 1: Manual Step-by-Step Execution
-
-```bash
-# Step 1: Upload raw data to S3 Bronze layer
-aws s3 cp data/nyc_taxi_data.csv \
-  s3://lakehouse-bronze-<your-name>/nyc-taxi/year=2024/month=01/
-
-# Step 2: Run Glue Crawler to catalog schema
-aws glue start-crawler --name nyc-taxi-crawler
-
-# Wait for completion (check status)
-aws glue get-crawler --name nyc-taxi-crawler
-
-# Step 3: Run Python ETL pipeline
-python scripts/etl/extract.py      # Extract from S3
-python scripts/etl/transform.py    # Clean & validate data
-python scripts/etl/load.py         # Load to SQLite
-
-# Step 4: Run dbt transformations
-cd lakehouse_dbt
-dbt run                            # Build all models
-dbt test                           # Run data quality tests
-
-# Step 5: Verify data quality
-python scripts/etl/data_quality.py --report
-```
-
-#### Option 2: Airflow Orchestration
-
-```bash
-# Access Airflow UI
-open http://localhost:8080
-
-# Enable DAG
-# Navigate to: DAGs → lakehouse_pipeline → Toggle ON
-
-# Trigger run (or wait for schedule)
-airflow dags trigger lakehouse_pipeline
-
-# Monitor progress
-airflow dags list-runs -d lakehouse_pipeline
-
-# View task logs
-airflow tasks logs lakehouse_pipeline extract <execution_date>
-```
-
-### Querying the Data Warehouse
-
-```sql
--- Connect to SQLite database
-sqlite3 lakehouse_sqlite/lakehouse.db
-
--- Example 1: Daily trip statistics
-SELECT 
-    trip_date,
-    COUNT(*) as total_trips,
-    SUM(fare_amount) as total_revenue,
-    AVG(trip_distance) as avg_distance,
-    AVG(fare_amount) as avg_fare
-FROM fact_trips
-GROUP BY trip_date
-ORDER BY trip_date DESC
-LIMIT 10;
-
--- Example 2: Top pickup locations
-SELECT 
-    l.location_name,
-    l.borough,
-    COUNT(*) as trip_count,
-    AVG(f.fare_amount) as avg_fare,
-    AVG(f.trip_distance) as avg_distance
-FROM fact_trips f
-JOIN dim_location l ON f.pickup_location_id = l.location_id
-GROUP BY l.location_name, l.borough
-ORDER BY trip_count DESC
-LIMIT 10;
-
--- Example 3: Payment type analysis
-SELECT 
-    p.payment_type,
-    COUNT(*) as trip_count,
-    SUM(f.fare_amount) as total_revenue,
-    AVG(f.fare_amount) as avg_fare,
-    ROUND(COUNT(*) * 100.0 / SUM(COUNT(*)) OVER (), 2) as pct_of_total
-FROM fact_trips f
-JOIN dim_payment p ON f.payment_id = p.payment_id
-GROUP BY p.payment_type
-ORDER BY total_revenue DESC;
-
--- Example 4: Hourly demand patterns
-SELECT 
-    d.hour_of_day,
-    COUNT(*) as trip_count,
-    AVG(f.fare_amount) as avg_fare
-FROM fact_trips f
-JOIN dim_datetime d ON f.datetime_id = d.datetime_id
-GROUP BY d.hour_of_day
-ORDER BY d.hour_of_day;
-
--- Example 5: Weekend vs Weekday comparison
-SELECT 
-    CASE WHEN d.is_weekend = 1 THEN 'Weekend' ELSE 'Weekday' END as day_type,
-    COUNT(*) as trip_count,
-    AVG(f.fare_amount) as avg_fare,
-    AVG(f.trip_distance) as avg_distance
-FROM fact_trips f
-JOIN dim_datetime d ON f.datetime_id = d.datetime_id
-GROUP BY d.is_weekend;
-```
-
-### Using Athena to Query S3 Directly
-
-```sql
--- Query data in S3 using Athena (serverless)
--- No data loading required!
-
-SELECT 
-    pickup_datetime,
-    fare_amount,
-    trip_distance
-FROM nyc_taxi_lakehouse.raw_taxi_trips
-WHERE year = '2024' 
-  AND month = '01'
-LIMIT 100;
-```
-
----
-
-## 💡 What I Learned
-
-### Technical Skills Developed
-
-#### 1. **AWS Cloud Architecture**
-- Designed **multi-layer lakehouse** with Bronze/Silver/Gold separation
-- Implemented **serverless data processing** using Glue and Athena
-- Optimized **S3 storage** with partitioning strategies
-- Managed **IAM roles and policies** for secure access
-
-#### 2. **Data Quality Engineering**
-- Built **comprehensive validation framework** detecting 10.9% bad records
-- Implemented **automated data cleansing** pipeline
-- Created **quality metrics tracking** and reporting
-- Designed **error handling and logging** mechanisms
-
-#### 3. **ETL Pipeline Development**
-- Developed **production-ready ETL** with Python and pandas
-- Handled **1.37M+ records** efficiently
-- Implemented **incremental processing** patterns
-- Built **modular, reusable** pipeline components
-
-#### 4. **Dimensional Modeling**
-- Designed **star schema** for optimal query performance
-- Created **fact and dimension tables** with proper grain
-- Implemented **slowly changing dimensions** (SCD Type 1)
-- Used **dbt for SQL transformations** and testing
-
-#### 5. **Workflow Orchestration**
-- Built **complex DAGs** with Apache Airflow
-- Managed **task dependencies** and execution order
-- Implemented **retry logic** and error handling
-- Set up **monitoring and alerting**
-
-#### 6. **SQL & Database Design**
-- Worked with **SQLite** for local data warehousing
-- Optimized **query performance** with proper indexing
-- Designed **normalized and denormalized** schemas
-- Wrote **complex analytical queries** with JOINs and aggregations
-
-### Key Challenges & Solutions
-
-#### Challenge 1: Data Quality Issues
-**Problem**: 10.9% of records had missing values, duplicates, or invalid data  
-**Solution**: Built validation framework with 6 different check types  
-**Result**: Clean 89.1% pass rate with detailed quality reporting
-
-#### Challenge 2: Schema Discovery
-**Problem**: Manual schema definition is error-prone and time-consuming  
-**Solution**: AWS Glue Crawler automates schema detection from S3 data  
-**Result**: Automatic schema updates when data structure changes
-
-#### Challenge 3: Efficient Processing
-**Problem**: Processing 1.37M records efficiently in Python  
-**Solution**: Used pandas with chunking and AWS Wrangler for optimized I/O  
-**Result**: Successful processing of entire dataset
-
-#### Challenge 4: Local Development
-**Problem**: Testing against cloud data warehouse is slow and expensive  
-**Solution**: SQLite for local development and testing  
-**Result**: Fast iteration cycle with zero cloud costs
 
 ---
 
 ## 🔮 Future Enhancements
 
-### Near-Term Improvements
-
-- [ ] **Cloud Data Warehouse Migration**
-  - Migrate from SQLite to Amazon Redshift for production scale
-  - Implement distribution and sort keys for query optimization
-  - Enable concurrent query processing
-
-- [ ] **Advanced Monitoring**
-  - Custom CloudWatch dashboards for pipeline health
-  - Automated alerting via SNS/email
-  - Data quality metrics tracking over time
-
-- [ ] **Enhanced Testing**
-  - Expand dbt test coverage
-  - Add integration tests for end-to-end pipeline
-  - Implement data quality regression tests
-
-### Mid-Term Enhancements
-
-- [ ] **Real-Time Processing**
-  - AWS Kinesis for streaming data ingestion
-  - Lambda functions for real-time transformations
-  - Near-real-time analytics capabilities
-
-- [ ] **Visualization Layer**
-  - Amazon QuickSight dashboards
-  - Executive KPI reporting
-  - Interactive analytics for business users
-
-- [ ] **Machine Learning Integration**
-  - Demand forecasting models
-  - Anomaly detection for fraud prevention
-  - Route optimization algorithms
-
-### Long-Term Vision
-
-- [ ] **Data Governance**
-  - AWS Lake Formation for access control
-  - Data lineage tracking
-  - PII detection and masking
-  - Compliance automation (GDPR, CCPA)
-
-- [ ] **Performance Optimization**
-  - Parquet format conversion for better compression
-  - Partition pruning strategies
-  - Query result caching
-
-- [ ] **Advanced Analytics**
-  - Graph analytics for route networks
-  - Geospatial analysis with PostGIS
-  - Natural language query interface
-
----
-
-## 🤝 Contributing
-
-Contributions, issues, and feature requests are welcome!
-
-Feel free to check the [issues page](https://github.com/manojkumaryalaga/aws-lakehouse-pipeline/issues).
-
+- [ ] Snowflake migration (replace SQLite for production scale)
+- [ ] AWS Kinesis real-time streaming ingestion
+- [ ] SageMaker hosted ML endpoints
+- [ ] Amazon QuickSight executive dashboards
+- [ ] AWS Lake Formation data governance + lineage
+- [ ] RAG / LLM natural language querying of trip data
 
 ---
 
@@ -784,28 +341,11 @@ Feel free to check the [issues page](https://github.com/manojkumaryalaga/aws-lak
 
 **Manoj Kumar Yalaga**
 
-- 📧 Email: manojkyalaga@gmail.com
-- 💼 LinkedIn: [linkedin.com/in/mky-sde](https://linkedin.com/in/mky-sde)
-- 🐙 GitHub: [@manojkumaryalaga](https://github.com/manojkumaryalaga)
-- 📍 Location: Hollywood, Florida
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-mky--sde-blue)](https://linkedin.com/in/mky-sde)
+[![GitHub](https://img.shields.io/badge/GitHub-manojkumaryalaga-black)](https://github.com/manojkumaryalaga)
+[![Email](https://img.shields.io/badge/Email-manojkyalaga%40gmail.com-red)](mailto:manojkyalaga@gmail.com)
 
----
-
-## 🙏 Acknowledgments
-
-- **NYC Taxi & Limousine Commission** for providing open-source trip data
-- **AWS Documentation** for cloud architecture best practices
-- **dbt Community** for transformation patterns and testing frameworks
-- **Apache Airflow Community** for workflow orchestration examples
-
----
-
-## 📚 Resources
-
-- [AWS Data Lakes and Analytics](https://aws.amazon.com/big-data/datalakes-and-analytics/)
-- [dbt Documentation](https://docs.getdbt.com/)
-- [Apache Airflow Documentation](https://airflow.apache.org/docs/)
-- [SQLite Documentation](https://www.sqlite.org/docs.html)
+📍 Hollywood, Florida
 
 ---
 
@@ -814,10 +354,8 @@ Feel free to check the [issues page](https://github.com/manojkumaryalaga/aws-lak
 ---
 
 **Project Stats:**
-- 📊 **Records Processed**: 1,369,765
-- ✅ **Data Quality Rate**: 89.1%
-- 🗄️ **Database**: SQLite 3
-- ☁️ **Cloud Provider**: AWS
-- 🔄 **Pipeline Status**: Active
-
-**Last Updated**: April 2026
+- 📊 Records Processed: 1,369,765
+- ✅ Data Quality Rate: 89.1%
+- 🤖 ML Models: 3 (XGBoost + Isolation Forest + LightGBM)
+- ☁️ AWS: S3 · Glue · Athena · CloudWatch
+- 🔄 Pipeline Status: Active · Last Updated: May 2026
