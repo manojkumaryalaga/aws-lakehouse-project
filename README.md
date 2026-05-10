@@ -120,12 +120,14 @@ Crawler state: **Ready · Succeeded** · Last run: April 4, 2026 · 1 table crea
 
 Pipeline summary — **1,369,765 trips · $12.1 avg fare · $1.656B total revenue · 4.63 mi avg distance** — completed in **1.076 sec**, scanning 120.15 MB.
 
-![Athena Pipeline Stats](screenshots/Screenshot%20(213).png)
+![dbt view](screenshots/Screenshot%20(213).png)
 
-Top pickup zones — Zone 236: **74,397 trips** · Zone 237: **73,029 trips** · Zone 141: **46,435 trips**
+### Athena Queries
 
+![Athena Top Zones](screenshots/Screenshot%20(207).png)
 ![Athena Top Zones](screenshots/Screenshot%20(208).png)
-
+![Athena Top Zones](screenshots/Screenshot%20(209).png)
+![Athena Top Zones](screenshots/Screenshot%20(211).png)
 ---
 
 ## ⚙️ dbt querying on modeled data
