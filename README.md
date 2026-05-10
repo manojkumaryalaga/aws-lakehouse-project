@@ -104,27 +104,27 @@ NYC Taxi CSV (120 MB)
 
 Single bucket with 4 folders: `raw/` · `processed/` · `athena-results/` · `scripts/`
 
-![S3 Bucket Structure](screenshots/Screenshot__192_.png)
+![S3 Bucket Structure](screenshots/Screenshot%20(192).png)
 
 ### AWS Glue — Schema Auto-Discovery
 
 Glue Crawler `lakehouse-crawler` scanned S3 and auto-detected **18 columns** including `vendorid`, `tpep_pickup_datetime`, `trip_distance`, `pulocationid`, `fare_amount` and more.
 
-![Glue Schema 18 Columns](screenshots/Screenshot__198_.png)
+![Glue Schema 18 Columns](screenshots/Screenshot%20(198).png)
 
 Crawler state: **Ready · Succeeded** · Last run: April 4, 2026 · 1 table created in `lakehouse_db`
 
-![Glue Crawler Succeeded](screenshots/Screenshot__202_.png)
+![Glue Crawler Succeeded](screenshots/Screenshot%20(202).png)
 
 ### Amazon Athena — Serverless Query Results
 
 Pipeline summary — **1,369,765 trips · $12.1 avg fare · $1.656B total revenue · 4.63 mi avg distance** — completed in **1.076 sec**, scanning 120.15 MB.
 
-![Athena Pipeline Stats](screenshots/Screenshot__213_.png)
+![Athena Pipeline Stats](screenshots/Screenshot%20(213).png)
 
 Top pickup zones — Zone 236: **74,397 trips** · Zone 237: **73,029 trips** · Zone 141: **46,435 trips**
 
-![Athena Top Zones](screenshots/Screenshot__208_.png)
+![Athena Top Zones](screenshots/Screenshot%20(208).png)
 
 ---
 
@@ -139,7 +139,7 @@ Cleaned data uploaded to S3 processed/ folder
 Loading 1220127 rows into SQLite... Done!
 ```
 
-![VS Code ETL Run](screenshots/Screenshot__196_.png)
+![VS Code ETL Run](screenshots/Screenshot%20(196).png)
 
 ---
 
@@ -149,11 +149,11 @@ Star schema built with dbt-core (SQLite adapter). Models visible via Datasette a
 
 ### `raw_taxi_trips` — 1,220,127 rows
 
-![raw_taxi_trips](screenshots/Screenshot__195_.png)
+![raw_taxi_trips](screenshots/Screenshot%20(195).png)
 
 ### `fact_trips` — 1,220,127 rows
 
-![fact_trips](screenshots/Screenshot__211_.png)
+![fact_trips](screenshots/Screenshot%20(211).png)
 
 ---
 
@@ -161,11 +161,11 @@ Star schema built with dbt-core (SQLite adapter). Models visible via Datasette a
 
 Custom namespace **`LakehousePipeline`** with 4 metrics: `DataQualityScore` · `RowsAfterCleaning` · `RowsDropped` · `RowsProcessed`
 
-![CloudWatch Metrics](screenshots/Screenshot__216_.png)
+![CloudWatch Metrics](screenshots/Screenshot%20(216).png)
 
 Alarm **`LowDataQuality`** fires when `DataQualityScore < 80` for 1 datapoint within 5 minutes.
 
-![CloudWatch Alarm](screenshots/Screenshot__218_.png)
+![CloudWatch Alarm](screenshots/Screenshot%20(218).png)
 
 ---
 
@@ -193,7 +193,7 @@ python run_all_models.py
 
 `rolling_24h_avg` (importance 0.38) is the strongest predictor — recent demand drives future demand.
 
-![Model 1 Demand Forecast](screenshots/Screenshot__221_.png)
+![Model 1 Demand Forecast](screenshots/Screenshot%20(221).png)
 
 ---
 
@@ -209,7 +209,7 @@ python run_all_models.py
 
 **Key insight**: Overnight hours (10pm–6am) show **17–26% anomaly rate** vs 2–5% during daytime.
 
-![Model 2 Anomaly Detection](screenshots/Screenshot__223_.png)
+![Model 2 Anomaly Detection](screenshots/Screenshot%20(223).png)
 
 ---
 
@@ -231,13 +231,13 @@ Live demo predictions:
 | JFK → Manhattan · 15mi · 11pm weekend | **$36.40** |
 | Short trip · 0.8mi · midday | **$4.63** |
 
-![Model 3 Fare Estimator](screenshots/Screenshot__225_.png)
+![Model 3 Fare Estimator](screenshots/Screenshot%20(225).png)
 
 ### Live Interactive Predictor
 
 Input any trip parameters → instant LightGBM fare prediction with surge factor breakdown.
 
-![Live Predictor](screenshots/Screenshot__220_.png)
+![Live Predictor](screenshots/Screenshot%20(220).png)
 
 ---
 
