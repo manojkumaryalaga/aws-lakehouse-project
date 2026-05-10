@@ -116,7 +116,7 @@ Crawler state: **Ready · Succeeded** · Last run: April 4, 2026 · 1 table crea
 
 ![Glue Crawler Succeeded](screenshots/Screenshot%20(202).png)
 
-### Amazon Athena — Serverless Query Results
+### dbt materialized views
 
 Pipeline summary — **1,369,765 trips · $12.1 avg fare · $1.656B total revenue · 4.63 mi avg distance** — completed in **1.076 sec**, scanning 120.15 MB.
 
