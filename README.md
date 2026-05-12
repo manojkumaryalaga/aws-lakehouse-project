@@ -116,6 +116,63 @@ Crawler state: **Ready · Succeeded** · Last run: April 4, 2026 · 1 table crea
 
 ![Glue Crawler Succeeded](screenshots/Screenshot%20(202).png)
 
+## 🔄 ETL Scripts — Production Pipeline
+
+**Three Python scripts orchestrate data flow from raw S3 ingestion (1.37M records) to production warehouse with real-time monitoring — achieving 89.1% data quality in 45 seconds.**
+
+---
+
+### Pipeline Scripts
+
+![ETL Scripts Directory](screenshots/Screenshot%20(227).png)
+
+| Script | Purpose | Runtime |
+|--------|---------|---------|
+| `etl.py` | Extract from S3 → Validate (6 checks) → Clean → Write to S3 Silver | 30s |
+| `load_to_sqlite.py` | Download cleaned data → Bulk insert 1.22M rows to SQLite | 12s |
+| `cloudwatch_monitor.py` | Calculate quality metrics → Publish to CloudWatch | 3s |
+
+---
+
+### Successful Execution
+
+![Pipeline Success](screenshots/Screenshot%20(228).png)
+
+```python
+✅ etl.py
+   • Rows before: 1,369,765
+   • Rows after:  1,220,127
+   • Quality rate: 89.1%
+   • Status: Cleaned data uploaded to S3 ✅
+
+✅ load_to_sqlite.py  
+   • Loading 1,220,127 rows into SQLite... Done! ✅
+   • Insert rate: 101,677 rows/sec
+
+✅ cloudwatch_monitor.py
+   • Published 4 metrics to CloudWatch ✅
+   • Alarm: LowDataQuality (Status: OK)
+```
+
+**Total Runtime:** 45 seconds | **Throughput:** 30,438 records/sec
+
+---
+
+### Data Quality Validation
+
+| Check | Records Removed |
+|-------|----------------|
+| Null values | 78,432 |
+| Duplicates | 12,891 |
+| Invalid ranges (fare $0-$500, distance 0-100mi) | 45,219 |
+| Type mismatches | 8,744 |
+| Schema violations | 4,352 |
+| **Total cleaned** | **149,638 (10.9%)** |
+
+**Pass Rate: 89.1%** ✅
+
+---
+
 ### dbt materialized views
 
 Pipeline summary — **1,369,765 trips · $12.1 avg fare · $1.656B total revenue · 4.63 mi avg distance** — completed in **1.076 sec**, scanning 120.15 MB.
