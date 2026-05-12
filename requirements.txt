@@ -1,5 +1,14 @@
+# AWS ETL Pipeline Dependencies
 boto3==1.39.3
 pandas==2.2.3
+ 
+# dbt Dependencies
 dbt-sqlite==1.10.0
 dbt-core==1.11.8
+ 
+# Orchestration
 apache-airflow==2.10.0
+ 
+# Streamlit Live Demo
+streamlit==1.32.0
+numpy==1.26.4
